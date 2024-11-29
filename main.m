@@ -90,8 +90,8 @@ function ret = calc_cross_section_forces(x, force_matrix, act_point_matrix)
         moments(:,i) = cross(act_point_matrix(:,i) - cross_section_pos, forces(:, i));
     end
 
-    T = [sum(forces(1,:)); sum(forces(2,:)); sum(forces(3,:))];
-    M = [sum(moments(1,:)); sum(moments(2,:)); sum(moments(3,:))];
+    T = -[sum(forces(1,:)); sum(forces(2,:)); sum(forces(3,:))];
+    M = -[sum(moments(1,:)); sum(moments(2,:)); sum(moments(3,:))];
     ret.T = T;
     ret.M = M;
 end
