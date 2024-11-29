@@ -51,7 +51,7 @@ for i = 1:length(force_matrix)
     force = force * 0.1;
 
     hold on;
-    quiver3(act_point(1), act_point(2), act_point(3), force(1), force(2), force(3));
+    quiver3(act_point(1), act_point(2), act_point(3), force(1), force(2), force(3), 'r','LineWidth',1);
 end
 
 %Draw cylinders
@@ -69,19 +69,34 @@ surf(Z*bearing_pos + L -bearing_pos, X, Y);
 
 
 
-pbaspect([0.5,1,1]);
+pbaspect([1,1,1]);
 
 
 
-%some plotting
-% axis([0 1 0 1 0 1])
-% hold all
-% quiver3(0,0,-max(zlim),0,0,2*max(zlim),'b','LineWidth',1)
-% quiver3(0,-max(ylim),0,0,2*max(ylim),0,'b','LineWidth',1)
-% quiver3(-max(xlim),0,0,2*max(xlim),0,0,'b','LineWidth',1)
-% text(0,0,max(zlim),'Z','Color','b')
-% text(0,max(ylim),0,'Y','Color','b')
-% text(max(xlim),0,0,'X','Color','b')
-% axis equal
-% view(30,30)
-% set(gca, 'LineWidth',2, 'XGrid','on', 'GridLineStyle','--')
+function ret = calc_cross_section_forces(x, force_matrix, act_point_matrix)
+    cross_section_pos = [x; 0; 0];
+    forces = [];
+
+    %Get forces left of x
+    for i = 1:length(act_point_matrix)
+        if act_point_matrix(1, i) - x <= 0
+            forces = [forces, force_matrix(:, i)];
+        end
+    end
+
+    [~, cols] = size(forces);
+    moments = zeros(size(forces));
+    for i = 1:cols
+        moments(:,i) = cross(act_point_matrix(:,i) - cross_section_pos, forces(:, i));
+    end
+
+    T = [sum(forces(1,:)); sum(forces(2,:)); sum(forces(3,:))];
+    M = [sum(moments(1,:)); sum(moments(2,:)); sum(moments(3,:))];
+    ret.T = T;
+    ret.M = M;
+end
+
+
+result = calc_cross_section_forces(0, force_matrix, act_point_matrix);
+disp(result.T)
+disp(result.M)
