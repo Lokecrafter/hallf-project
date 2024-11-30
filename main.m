@@ -73,29 +73,55 @@ pbaspect([1,1,1]);
 
 
 
-function ret = calc_cross_section_forces(x, force_matrix, act_point_matrix)
-    cross_section_pos = [x; 0; 0];
-    forces = [];
+function ret = calc_cross_section_forces(x_points, force_matrix, act_point_matrix)
+    T = [];
+    M = [];
+    for x = x_points
+        cross_section_pos = [x; 0; 0];
+        forces = [];
 
-    %Get forces left of x
-    for i = 1:length(act_point_matrix)
-        if act_point_matrix(1, i) - x <= 0
-            forces = [forces, force_matrix(:, i)];
+        [~, cols] = size(act_point_matrix);
+        %Get forces left of x
+        for i = 1:cols
+            if act_point_matrix(1, i) - x <= 0
+                forces = [forces, force_matrix(:, i)];
+            end
         end
-    end
 
-    [~, cols] = size(forces);
-    moments = zeros(size(forces));
-    for i = 1:cols
-        moments(:,i) = cross(act_point_matrix(:,i) - cross_section_pos, forces(:, i));
-    end
+        [~, cols] = size(forces);
+        moments = zeros(size(forces));
+        for i = 1:cols
+            moments(:,i) = cross(act_point_matrix(:,i) - cross_section_pos, forces(:, i));
+        end
 
-    T = -[sum(forces(1,:)); sum(forces(2,:)); sum(forces(3,:))];
-    M = -[sum(moments(1,:)); sum(moments(2,:)); sum(moments(3,:))];
+        T = [T, -[sum(forces(1,:)); sum(forces(2,:)); sum(forces(3,:))]];
+        M = [M, -[sum(moments(1,:)); sum(moments(2,:)); sum(moments(3,:))]];
+    end 
     ret.T = T;
     ret.M = M;
 end
 
+force_matrix = [
+    0, 0, 0;
+    0, 0, 0;
+    1, 2, 1;
+];
+act_point_matrix = [
+    0, 0.5, 1;
+    0, 0, 0;
+    0, 0, 0;
+];
+
+xx = linspace(0, 1, 100);
+
+% result = calc_cross_section_forces(xx, force_matrix, act_point_matrix)
+% disp(result.T)
+% disp(result.M)
+% f2 = figure;
+% plot(xx, result.T(3,:), 'o-');
+% hold on;
+% plot(xx, result.M(2,:), 'o-');
+% hold on;
 
 result = calc_cross_section_forces(0, force_matrix, act_point_matrix);
 disp(result.T)
