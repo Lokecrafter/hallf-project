@@ -3,44 +3,72 @@ clear all; clc; close all;
 %Inputdata
 L = 10;
 
+%Veichle geometry
+h = 1;  %CoM - Ground
+h1 = 0.5; %CoM - Air resistance
+df = 1; %CoM - front
+db = 1; %CoM - rear
+dh = 2; %
+rd = 1; %radius chain drive
+rb = 1; %radius brake rotor
+Dd = 1; %radius wheel
+
+%Constants
+air_desity = 1;
+veichle_front_area = L*(h+h1);
+air_resistance_coefficient = 1;
+a = 0; %acceleration
+v = 10; %velocity
+mass = 100;
+g = 9.82;
+
+%Given forces
+air_resistance_magnitude = 0.5 * air_desity * veichle_front_area * air_resistance_coefficient * v * v;
+drive_force_magnitude = air_resistance_magnitude + mass * a;
+wheel_force_vertical_magnitude = (drive_force_magnitude * h + air_resistance_magnitude * h1 + mass * g * df) / (db + df);
+chain_force_magnitude = drive_force_magnitude * dh / (2 * rd);
+
 %Radiuses
-axle_main_radius = 0.05/2;
+axle_main_radius = rb / 2;
 axle_secondary_radius = axle_main_radius * 0.8;
-chain_radius = axle_main_radius + 0.02; %rd
-wheel_radius = 0.4/2; %Dd
-brake_disk_radius = wheel_radius/2; % rb
+chain_radius = rd; %rd
+wheel_radius = Dd; %Dd
+brake_disk_radius = rb; % rb
 
 %Positions
 bearing_pos = 1; %b1
-brake_disk_pos = 1;
+brake_disk_pos = 1.5;
 
-
+%Directions
+right = [1; 0; 0];
+forward = [0; 1; 0];
+up = [0; 0; 1];
 
 %Forces
-bearing_force_N = 20 * [0; 1; 1] / sqrt(2); % Actual values later
-wheel_drive_force_N = 20 * [0; 0; 1];
-wheel_normal_force_N = 20 * [0; 1; 0];
-braking_force_N = 20 * [0; 1; 1] / sqrt(2);
-chain_force_N = 20 * [0; 0; 1];
+bearing_force_N = -0.5 * (drive_force_magnitude + chain_force_magnitude) * forward + wheel_force_vertical_magnitude * -0.5 * up ; % Actual values later
+wheel_drive_force_N = drive_force_magnitude * 0.5 * forward;
+wheel_normal_force_N = wheel_force_vertical_magnitude * 0.5 * up;
+braking_force_N = 0 * (up + forward) / norm(up + forward);
+chain_force_N = chain_force_magnitude * forward;
 
 %Act points
-wheel_act_point_left = [0; 0; -wheel_radius];
-bearing_act_point_left = [bearing_pos; 0; 0];
-brake_act_point_left = [brake_disk_pos; brake_disk_radius/sqrt(2); -brake_disk_radius/sqrt(2)];
-chain_act_point = [L/2; 0; chain_radius];
-brake_act_point_right = [L-brake_disk_pos; brake_disk_radius/sqrt(2); -brake_disk_radius/sqrt(2)];
-bearing_act_point_right = [L-bearing_pos; 0; 0];
-wheel_act_point_right = [L; 0; -wheel_radius];
+wheel_act_point_left = 0 * right - wheel_radius * up;
+bearing_act_point_left = bearing_pos * right;
+brake_act_point_left = brake_disk_pos * right + (brake_disk_radius/sqrt(2)) * forward - (brake_disk_radius/sqrt(2)) * up;
+chain_act_point = right * L/2 + chain_radius * up;
+brake_act_point_right = (L-brake_disk_pos) * right + (brake_disk_radius/sqrt(2)) * forward - (brake_disk_radius/sqrt(2)) * up;
+bearing_act_point_right = (L-bearing_pos) * right;
+wheel_act_point_right = L * right - wheel_radius * up;
 
 wheel_total_force_N = wheel_normal_force_N + wheel_drive_force_N;
 
-
+%Forces at acting points on the axle
 force_matrix = [wheel_total_force_N, bearing_force_N, braking_force_N, chain_force_N, braking_force_N, bearing_force_N, wheel_total_force_N];
 act_point_matrix = [wheel_act_point_left, bearing_act_point_left, brake_act_point_left, chain_act_point, brake_act_point_right, bearing_act_point_right, wheel_act_point_right];
 
 %Cross section information
 cross_section_radiuses = [axle_secondary_radius, axle_main_radius, axle_secondary_radius];
-cross_section_locations = [0, bearing_pos, L-bearing_pos];
+cross_section_change_area_position = [0, bearing_pos, L-bearing_pos];
 % cross_section_moment_of_inertias = [
 %     0, 0, 0;
 %     axle_secondary_radius, axle_main_radius, axle_secondary_radius;
@@ -63,6 +91,7 @@ cross_section_locations = [0, bearing_pos, L-bearing_pos];
 disp(force_matrix);
 disp(act_point_matrix);
 
+%Plot 3D visualization
 plot3(act_point_matrix(1, :), act_point_matrix(2, :), act_point_matrix(3, :), '*');
 for i = 1:length(force_matrix)
     act_point = act_point_matrix(:, i);
@@ -94,7 +123,7 @@ surf(Z*bearing_pos + L -bearing_pos, X, Y);
 pbaspect([1,1,1]);
 
 
-
+%Calculate cross section force at x_points along x-axis
 function ret = calc_cross_section_forces(x_points, force_matrix, act_point_matrix)
     T = [];
     M = [];
@@ -123,7 +152,7 @@ function ret = calc_cross_section_forces(x_points, force_matrix, act_point_matri
     ret.M = M;
 end
 
-function ret = calc_cross_section_stress(x_points, cross_section_forces, cross_section_moments, cross_section_radiuses, cross_section_locations)
+function ret = calc_cross_section_stress(x_points, cross_section_forces, cross_section_moments, cross_section_radiuses, cross_section_change_area_position)
     stress_matrixes = zeros(3, 3, length(x_points));
     cross_section_moment_of_inertias = [
         0, 0, 0;
@@ -171,32 +200,51 @@ function ret = calc_cross_section_stress(x_points, cross_section_forces, cross_s
     ret = stress_matrixes;
 end
 
-force_matrix = [
-    0, 0, 0;
-    0, 0, 0;
-    1, 2, 1;
-];
-act_point_matrix = [
-    0, 0.5, 1;
-    0, 0, 0;
-    0, 0, 0;
-];
+% force_matrix = [
+%     0, 0, 0;
+%     0, 0, 0;
+%     1, -2, 1;
+% ];
+% act_point_matrix = [
+%     0, 0.5, 1;
+%     0, 0, 0;
+%     0, 0, 0;
+% ];
 
-xx = linspace(0, 1, 100);
+xx = linspace(0, L, 100);
 
-result = calc_cross_section_forces(xx, force_matrix, act_point_matrix)
+result = calc_cross_section_forces(xx, force_matrix, act_point_matrix);
 disp(result.T)
 disp(result.M)
 f2 = figure;
-plot(xx, result.T(3,:), 'o-');
+subplot(2, 2, 1);
+plot(xx, result.T(1,:), 'o-');
+hold on;
+plot(xx, result.M(1,:), 'o-');
+hold on;
+title("X direction (right)");
+legend(["Tx", "Mx"])
+
+subplot(2, 2, 2);
+plot(xx, result.T(2,:), 'o-');
 hold on;
 plot(xx, result.M(2,:), 'o-');
 hold on;
+title("Y direction (forward)");
+legend(["Ty", "My"])
+
+subplot(2, 2, 3);
+plot(xx, result.T(3,:), 'o-');
+hold on;
+plot(xx, result.M(3,:), 'o-');
+hold on;
+title("Z direction (up)");
+legend(["Tz", "Mz"])
 
 % result = calc_cross_section_forces(0, force_matrix, act_point_matrix);
 % disp(result.T)
 % disp(result.M)
 
-result = calc_cross_section_stress(0.3, result.T, result.M, cross_section_radiuses, cross_section_locations);
+result = calc_cross_section_stress(0.3, result.T, result.M, cross_section_radiuses, cross_section_change_area_position);
 disp("Stress matrixes: ")
 disp(result);
