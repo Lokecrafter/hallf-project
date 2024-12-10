@@ -48,29 +48,14 @@ classdef Axle
 
             %Constants
             air_desity = 1;
-            veichle_front_area = L*(h+h1);
-            air_resistance_coefficient = 1;
-            a = 0; %acceleration
-            v = 10; %velocity
-            mass = 100;
             g = 9.82;
 
+            car = obj.car;
             %Given forces
-            air_resistance_magnitude = 0.5 * air_desity * veichle_front_area * air_resistance_coefficient * v * v;
-            drive_force_magnitude = air_resistance_magnitude + mass * a;
-            wheel_force_vertical_magnitude = (drive_force_magnitude * h + air_resistance_magnitude * h1 + mass * g * df) / (db + df);
-            chain_force_magnitude = drive_force_magnitude * dh / (2 * rd);
-
-            %Radiuses
-            axle_main_radius = rb / 2;
-            axle_secondary_radius = axle_main_radius * 0.8;
-            chain_radius = rd; %rd
-            wheel_radius = Dd; %Dd
-            brake_disk_radius = rb; % rb
-
-            %Positions
-            bearing_pos = 1; %b1
-            brake_disk_pos = 1.5;
+            air_resistance_magnitude = 0.5 * air_desity * car.area_front * car.coefficient_air_resistance * new_velocity.^2;
+            drive_force_magnitude = air_resistance_magnitude + car.mass * 0;
+            wheel_force_vertical_magnitude = (drive_force_magnitude * car.height_center_of_mass + air_resistance_magnitude * car.height_air_resistance + car.mass * g * car.distance_front) / (car.distance_rear + car.distance_front);
+            chain_force_magnitude = drive_force_magnitude * (car.radius_wheel * 2) / (2 * obj.raduis_drive);
 
             %Directions
             right = [1; 0; 0];
@@ -85,21 +70,54 @@ classdef Axle
             chain_force_N = chain_force_magnitude * forward;
 
             %Act points
-            wheel_act_point_left = 0 * right - wheel_radius * up;
-            bearing_act_point_left = bearing_pos * right;
-            brake_act_point_left = brake_disk_pos * right + (brake_disk_radius/sqrt(2)) * forward - (brake_disk_radius/sqrt(2)) * up;
-            chain_act_point = right * L/2 + chain_radius * up;
-            brake_act_point_right = (L-brake_disk_pos) * right + (brake_disk_radius/sqrt(2)) * forward - (brake_disk_radius/sqrt(2)) * up;
-            bearing_act_point_right = (L-bearing_pos) * right;
-            wheel_act_point_right = L * right - wheel_radius * up;
+            wheel_act_point_left = 0 * right - obj.radius_wheel * up;
+            bearing_act_point_left = (obj.distance_bearing) * right;
+            brake_act_point_left = (obj.length * 0.5 - obj.distance_center2brake) * right + (obj.radius_brake/sqrt(2)) * forward - (obj.radius_brake/sqrt(2)) * up;
+            chain_act_point = right * L/2 + obj.raduis_drive * up;
+            brake_act_point_right = (obj.length * 0.5 + obj.distance_center2brake) * right + (obj.radius_brake/sqrt(2)) * forward - (obj.radius_brake/sqrt(2)) * up;
+            bearing_act_point_right = (obj.length - obj.distance_bearing) * right;
+            wheel_act_point_right = obj.length * right - obj.radius_wheel * up;
 
             wheel_total_force_N = wheel_normal_force_N + wheel_drive_force_N;
 
             %Forces at acting points on the axle
-            force_matrix = [wheel_total_force_N, bearing_force_N, braking_force_N, chain_force_N, braking_force_N, bearing_force_N, wheel_total_force_N];
-            act_point_matrix = [wheel_act_point_left, bearing_act_point_left, brake_act_point_left, chain_act_point, brake_act_point_right, bearing_act_point_right, wheel_act_point_right];
-
-            
+            obj.force_matrix = [wheel_total_force_N, bearing_force_N, braking_force_N, chain_force_N, braking_force_N, bearing_force_N, wheel_total_force_N];
+            obj.act_point_matrix = [wheel_act_point_left, bearing_act_point_left, brake_act_point_left, chain_act_point, brake_act_point_right, bearing_act_point_right, wheel_act_point_right];
         end
+
+
+
+
+
+
+        %Calculate cross section force at x_points along x-axis
+        function ret = calc_cross_section_forces(obj, x_points)
+            T = [];
+            M = [];
+            for x = x_points
+                cross_section_pos = [x; 0; 0];
+                forces = [];
+                
+                [~, cols] = size(obj.act_point_matrix);
+                %Get forces left of x
+                for i = 1:cols
+                    if obj.act_point_matrix(1, i) - x <= 0
+                        forces = [forces, obj.force_matrix(:, i)];
+                    end
+                end
+
+                [~, cols] = size(forces);
+                moments = zeros(size(forces));
+                for i = 1:cols
+                    moments(:,i) = cross(obj.act_point_matrix(:,i) - cross_section_pos, forces(:, i));
+                end
+                
+                T = [T, -[sum(forces(1,:)); sum(forces(2,:)); sum(forces(3,:))]];
+                M = [M, -[sum(moments(1,:)); sum(moments(2,:)); sum(moments(3,:))]];
+            end 
+            ret.T = T;
+            ret.M = M;
+        end
+
     end
 end

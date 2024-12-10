@@ -8,7 +8,7 @@ h = 1;  %CoM - Ground
 h1 = 0.5; %CoM - Air resistance
 df = 1; %CoM - front
 db = 1; %CoM - rear
-dh = 2; %
+dh = 2; %Wheel diameter
 rd = 1; %radius chain drive
 rb = 1; %radius brake rotor
 Dd = 1; %radius wheel
@@ -35,36 +35,8 @@ chain_radius = rd; %rd
 wheel_radius = Dd; %Dd
 brake_disk_radius = rb; % rb
 
-%Positions
-bearing_pos = 1; %b1
-brake_disk_pos = 1.5;
 
-%Directions
-right = [1; 0; 0];
-forward = [0; 1; 0];
-up = [0; 0; 1];
 
-%Forces
-bearing_force_N = -0.5 * (drive_force_magnitude + chain_force_magnitude) * forward + wheel_force_vertical_magnitude * -0.5 * up ; % Actual values later
-wheel_drive_force_N = drive_force_magnitude * 0.5 * forward;
-wheel_normal_force_N = wheel_force_vertical_magnitude * 0.5 * up;
-braking_force_N = 0 * (up + forward) / norm(up + forward);
-chain_force_N = chain_force_magnitude * forward;
-
-%Act points
-wheel_act_point_left = 0 * right - wheel_radius * up;
-bearing_act_point_left = bearing_pos * right;
-brake_act_point_left = brake_disk_pos * right + (brake_disk_radius/sqrt(2)) * forward - (brake_disk_radius/sqrt(2)) * up;
-chain_act_point = right * L/2 + chain_radius * up;
-brake_act_point_right = (L-brake_disk_pos) * right + (brake_disk_radius/sqrt(2)) * forward - (brake_disk_radius/sqrt(2)) * up;
-bearing_act_point_right = (L-bearing_pos) * right;
-wheel_act_point_right = L * right - wheel_radius * up;
-
-wheel_total_force_N = wheel_normal_force_N + wheel_drive_force_N;
-
-%Forces at acting points on the axle
-force_matrix = [wheel_total_force_N, bearing_force_N, braking_force_N, chain_force_N, braking_force_N, bearing_force_N, wheel_total_force_N];
-act_point_matrix = [wheel_act_point_left, bearing_act_point_left, brake_act_point_left, chain_act_point, brake_act_point_right, bearing_act_point_right, wheel_act_point_right];
 
 %Cross section information
 cross_section_radiuses = [axle_secondary_radius, axle_main_radius, axle_secondary_radius];
@@ -123,34 +95,6 @@ surf(Z*bearing_pos + L -bearing_pos, X, Y);
 pbaspect([1,1,1]);
 
 
-%Calculate cross section force at x_points along x-axis
-function ret = calc_cross_section_forces(x_points, force_matrix, act_point_matrix)
-    T = [];
-    M = [];
-    for x = x_points
-        cross_section_pos = [x; 0; 0];
-        forces = [];
-        
-        [~, cols] = size(act_point_matrix);
-        %Get forces left of x
-        for i = 1:cols
-            if act_point_matrix(1, i) - x <= 0
-                forces = [forces, force_matrix(:, i)];
-            end
-        end
-
-        [~, cols] = size(forces);
-        moments = zeros(size(forces));
-        for i = 1:cols
-            moments(:,i) = cross(act_point_matrix(:,i) - cross_section_pos, forces(:, i));
-        end
-        
-        T = [T, -[sum(forces(1,:)); sum(forces(2,:)); sum(forces(3,:))]];
-        M = [M, -[sum(moments(1,:)); sum(moments(2,:)); sum(moments(3,:))]];
-    end 
-    ret.T = T;
-    ret.M = M;
-end
 
 function ret = calc_cross_section_stress(x_points, cross_section_forces, cross_section_moments, cross_section_radiuses, cross_section_change_area_position)
     stress_matrixes = zeros(3, 3, length(x_points));
