@@ -47,12 +47,13 @@ classdef Axle
             %Constants
             air_desity = 1;
             g = 9.82;
+            air_resistance_magnitude = 0.5 * air_desity * obj.car.area_front * obj.car.coefficient_air_resistance * new_velocity.^2;
 
             %Given forces
-            air_resistance_magnitude = 0.5 * air_desity * obj.car.area_front * obj.car.coefficient_air_resistance * new_velocity.^2;
-            drive_force_magnitude = air_resistance_magnitude + obj.car.mass * 0;
-            wheel_force_vertical_magnitude = (drive_force_magnitude * obj.car.height_center_of_mass + air_resistance_magnitude * obj.car.height_air_resistance + obj.car.mass * g * obj.car.distance_front) / (obj.car.distance_rear + obj.car.distance_front);
-            chain_force_magnitude = drive_force_magnitude * (obj.radius_wheel * 2) / (2 * obj.raduis_drive);
+            drive_force_total = air_resistance_magnitude;
+            vertical_force_total = (air_resistance_magnitude * (obj.car.height_air_resistance+obj.car.height_center_of_mass) + obj.car.mass * g * obj.car.distance_front) / (obj.car.distance_rear + obj.car.distance_front);
+            chain_force_total = drive_force_total * obj.radius_wheel/obj.raduis_drive;
+            brake_force_total = 0;
 
             %Directions
             right = [1; 0; 0];
@@ -60,11 +61,13 @@ classdef Axle
             up = [0; 0; 1];
 
             %Forces
-            bearing_force_N = -0.5 * (drive_force_magnitude + chain_force_magnitude) * forward + wheel_force_vertical_magnitude * -0.5 * up ; % Actual values later
-            wheel_drive_force_N = drive_force_magnitude * 0.5 * forward;
-            wheel_normal_force_N = wheel_force_vertical_magnitude * 0.5 * up;
-            braking_force_N = 0 * (up + forward) / norm(up + forward);
-            chain_force_N = chain_force_magnitude * forward;
+            vect_wheel_force_total = forward * drive_force_total + up * vertical_force_total;
+            vect_brake_force_total = brake_force_total * (up + forward) / norm(up + forward);
+            vect_chain_force_total = chain_force_total * forward;
+
+            %Reaction forces
+            vect_beraing_force_total = -(vect_chain_force_total + vect_brake_force_total + vect_wheel_force_total);
+
 
             %Act points
             wheel_act_point_left = 0 * right - obj.radius_wheel * up;
@@ -75,10 +78,8 @@ classdef Axle
             bearing_act_point_right = (obj.length_axle - obj.distance_bearing) * right;
             wheel_act_point_right = obj.length_axle * right - obj.radius_wheel * up;
 
-            wheel_total_force_N = wheel_normal_force_N + wheel_drive_force_N;
-
             %Forces at acting points on the axle
-            obj.force_matrix = [wheel_total_force_N, bearing_force_N, braking_force_N, chain_force_N, braking_force_N, bearing_force_N, wheel_total_force_N];
+            obj.force_matrix = [vect_wheel_force_total*0.5, vect_beraing_force_total*0.5, vect_brake_force_total*0.5, vect_chain_force_total, vect_brake_force_total*0.5, vect_beraing_force_total*0.5, vect_wheel_force_total*0.5];
             obj.act_point_matrix = [wheel_act_point_left, bearing_act_point_left, brake_act_point_left, chain_act_point, brake_act_point_right, bearing_act_point_right, wheel_act_point_right];
 
             ret = obj;
@@ -87,12 +88,13 @@ classdef Axle
             %Constants
             air_desity = 1;
             g = 9.82;
+            air_resistance_magnitude = 0.5 * air_desity * obj.car.area_front * obj.car.coefficient_air_resistance * new_velocity.^2;
 
             %Given forces
-            air_resistance_magnitude = 0.5 * air_desity * obj.car.area_front * obj.car.coefficient_air_resistance * new_velocity.^2;
-            drive_force_magnitude = air_resistance_magnitude + obj.car.mass * new_acceleration;
-            wheel_force_vertical_magnitude = (drive_force_magnitude * obj.car.height_center_of_mass + air_resistance_magnitude * obj.car.height_air_resistance + obj.car.mass * g * obj.car.distance_front) / (obj.car.distance_rear + obj.car.distance_front);
-            chain_force_magnitude = drive_force_magnitude * (obj.radius_wheel * 2) / (2 * obj.raduis_drive);
+            drive_force_total = air_resistance_magnitude + obj.car.mass * new_acceleration;
+            vertical_force_total = (air_resistance_magnitude * (obj.car.height_air_resistance+obj.car.height_center_of_mass) + obj.car.mass * new_acceleration * obj.car.height_center_of_mass + obj.car.mass * g * obj.car.distance_front) / (obj.car.distance_rear + obj.car.distance_front);
+            chain_force_total = drive_force_total * obj.radius_wheel/obj.raduis_drive;
+            brake_force_total = 0;
 
             %Directions
             right = [1; 0; 0];
@@ -100,11 +102,13 @@ classdef Axle
             up = [0; 0; 1];
 
             %Forces
-            bearing_force_N = -0.5 * (drive_force_magnitude + chain_force_magnitude) * forward + wheel_force_vertical_magnitude * -0.5 * up ; % Actual values later
-            wheel_drive_force_N = drive_force_magnitude * 0.5 * forward;
-            wheel_normal_force_N = wheel_force_vertical_magnitude * 0.5 * up;
-            braking_force_N = 0 * (up + forward) / norm(up + forward);
-            chain_force_N = chain_force_magnitude * forward;
+            vect_wheel_force_total = forward * drive_force_total + up * vertical_force_total;
+            vect_brake_force_total = brake_force_total * (up + forward) / norm(up + forward);
+            vect_chain_force_total = chain_force_total * forward;
+
+            %Reaction forces
+            vect_beraing_force_total = -(vect_chain_force_total + vect_brake_force_total + vect_wheel_force_total);
+
 
             %Act points
             wheel_act_point_left = 0 * right - obj.radius_wheel * up;
@@ -115,25 +119,23 @@ classdef Axle
             bearing_act_point_right = (obj.length_axle - obj.distance_bearing) * right;
             wheel_act_point_right = obj.length_axle * right - obj.radius_wheel * up;
 
-            wheel_total_force_N = wheel_normal_force_N + wheel_drive_force_N;
-
             %Forces at acting points on the axle
-            obj.force_matrix = [wheel_total_force_N, bearing_force_N, braking_force_N, chain_force_N, braking_force_N, bearing_force_N, wheel_total_force_N];
+            obj.force_matrix = [vect_wheel_force_total*0.5, vect_beraing_force_total*0.5, vect_brake_force_total*0.5, vect_chain_force_total, vect_brake_force_total*0.5, vect_beraing_force_total*0.5, vect_wheel_force_total*0.5];
             obj.act_point_matrix = [wheel_act_point_left, bearing_act_point_left, brake_act_point_left, chain_act_point, brake_act_point_right, bearing_act_point_right, wheel_act_point_right];
 
             ret = obj;
         end
         function ret=update_load_braking(obj, new_velocity, new_acceleration)
             %Constants
-            air_desity = 1.2;
+            air_desity = 1;
             g = 9.82;
+            air_resistance_magnitude = 0.5 * air_desity * obj.car.area_front * obj.car.coefficient_air_resistance * new_velocity.^2;
 
             %Given forces
-            air_resistance_magnitude = 0.5 * air_desity * obj.car.area_front * obj.car.coefficient_air_resistance * new_velocity.^2;
-            drive_force_magnitude = air_resistance_magnitude + obj.car.mass * new_acceleration;
-            wheel_force_vertical_magnitude = (drive_force_magnitude * obj.car.height_center_of_mass + air_resistance_magnitude * obj.car.height_air_resistance + obj.car.mass * g * obj.car.distance_front) / (obj.car.distance_rear + obj.car.distance_front);
-            chain_force_magnitude = 0 * drive_force_magnitude * (obj.radius_wheel * 2) / (2 * obj.radius_brake);
-            braking_force_magnitude = drive_force_magnitude * obj.radius_wheel / (2 * obj.radius_brake);
+            drive_force_total = air_resistance_magnitude + obj.car.mass * new_acceleration;
+            vertical_force_total = (air_resistance_magnitude * (obj.car.height_air_resistance+obj.car.height_center_of_mass) + obj.car.mass * new_acceleration * obj.car.height_center_of_mass + obj.car.mass * g * obj.car.distance_front) / (obj.car.distance_rear + obj.car.distance_front);
+            chain_force_total = 0;
+            brake_force_total = drive_force_total * obj.radius_wheel/obj.radius_brake;
 
             %Directions
             right = [1; 0; 0];
@@ -141,11 +143,13 @@ classdef Axle
             up = [0; 0; 1];
 
             %Forces
-            bearing_force_N = -0.5 * (drive_force_magnitude + chain_force_magnitude) * forward + wheel_force_vertical_magnitude * -0.5 * up ; % Actual values later
-            wheel_drive_force_N = drive_force_magnitude * 0.5 * forward;
-            wheel_normal_force_N = wheel_force_vertical_magnitude * 0.5 * up;
-            braking_force_N = 0.5 * braking_force_magnitude * (up + forward) / norm(up + forward);
-            chain_force_N = 0 * forward;
+            vect_wheel_force_total = forward * drive_force_total + up * vertical_force_total;
+            vect_brake_force_total = brake_force_total * (up + forward) / norm(up + forward);
+            vect_chain_force_total = chain_force_total * forward;
+
+            %Reaction forces
+            vect_beraing_force_total = -(vect_chain_force_total + vect_brake_force_total + vect_wheel_force_total);
+
 
             %Act points
             wheel_act_point_left = 0 * right - obj.radius_wheel * up;
@@ -156,10 +160,8 @@ classdef Axle
             bearing_act_point_right = (obj.length_axle - obj.distance_bearing) * right;
             wheel_act_point_right = obj.length_axle * right - obj.radius_wheel * up;
 
-            wheel_total_force_N = wheel_normal_force_N + wheel_drive_force_N;
-
             %Forces at acting points on the axle
-            obj.force_matrix = [wheel_total_force_N, bearing_force_N, braking_force_N, chain_force_N, braking_force_N, bearing_force_N, wheel_total_force_N];
+            obj.force_matrix = [vect_wheel_force_total*0.5, vect_beraing_force_total*0.5, vect_brake_force_total*0.5, vect_chain_force_total, vect_brake_force_total*0.5, vect_beraing_force_total*0.5, vect_wheel_force_total*0.5];
             obj.act_point_matrix = [wheel_act_point_left, bearing_act_point_left, brake_act_point_left, chain_act_point, brake_act_point_right, bearing_act_point_right, wheel_act_point_right];
 
             ret = obj;

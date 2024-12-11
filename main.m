@@ -17,6 +17,7 @@ rd = 0.4 * dh; %radius chain drive
 
 b1 = 0.150; %Distance bearing
 bb = 0.1; %Distance brake disk from center
+bb = 0.3; %Distance brake disk from center
 
 D = 0.050; %Diameter main
 d = 0.6 * D; %Diameter secondary
@@ -124,18 +125,20 @@ pbaspect([1,1,1]);
             legend(["Tz", "Mz"])
 
             subplot(2, 2, 4);
-            plot(xx, max_stresses ./ 1e6, "o-");
-            % plot(xx, sqrt(result.T(1,:).^2 + result.T(2,:).^2 + result.T(3,:).^2), 'o-');
-            % hold on;
-            % plot(xx, sqrt(result.M(2,:).^2 + result.M(3,:).^2), 'o-');
-            % hold on;
+            plot(xx, sqrt(result.T(2,:).^2 + result.T(3,:).^2), 'o-');
+            hold on;
+            plot(xx, sqrt(result.M(2,:).^2 + result.M(3,:).^2), 'o-');
+            hold on;
             % plot(xx, result.M(1,:), 'o-');
             % hold on;
-            % title("Magnitudes");
             % legend(["Tvärkraft belopp", "Böjmoment belopp", "Vridmoment belopp"])
-            ylabel("Effective stress [MPa]");
-            title("Effective stress");
-            legend(["Effective stress"]);
+            title("Magnitudes");
+            legend(["Tvärkraft belopp", "Böjmoment belopp"])
+            
+            % plot(xx, max_stresses ./ 1e6, "o-");
+            % ylabel("Effective stress [MPa]");
+            % title("Effective stress");
+            % legend(["Effective stress"]);
 
         end
         
