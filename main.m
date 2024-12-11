@@ -4,37 +4,37 @@ import Axle.*;
 import Car.*;
 
 %Inputdata
-L = 10;
+L = 1.100;
 
 %Veichle geometry
-h = 1;  %CoM - Ground
-h1 = 0.5; %CoM - Air resistance
-df = 1; %CoM - front
-db = 1; %CoM - rear
-dh = 2; %Wheel diameter
-rd = 1; %radius chain drive
-rb = 1; %radius brake rotor
+h = 0.45;  %CoM - Ground
+h1 = 0.2; %CoM - Air resistance
+df = 0.800; %CoM - front
+db = 0.300; %CoM - rear
+dh = 520; %Wheel diameter
+rb = 0.35 * dh; %radius brake rotor
+rd = 0.4 * dh; %radius chain drive
 
-b1 = 1; %Distance bearing
-bb = 1; %Distance brake disk from center
+b1 = 0.150; %Distance bearing
+bb = 0.1; %Distance brake disk from center
 
-D = 1; %Diameter main
+D = 0.050; %Diameter main
 d = 0.6 * D; %Diameter secondary
 
 
 
 %Veichle data
-air_resistance_coefficient = 1;
-veichle_front_area = L*(h+h1);
+air_resistance_coefficient = 0.3;
+veichle_front_area = 0.5;
 
 %Constants
-air_desity = 1;
-mass = 100;
+air_desity = 1.2;
+mass = 150;
 g = 9.82;
 
 
 %Inputs
-velocity = 10;
+velocity = 95/3.6;
 
 car = Car(df, db, h1, h, L, mass, air_resistance_coefficient, veichle_front_area);
 axle = Axle(L, b1, bb, D/2, d/2, rb, rd, dh/2, car);
@@ -97,8 +97,7 @@ pbaspect([1,1,1]);
             xx = linspace(0, axle.length_axle, 100);
             
             result = axle.calc_cross_section_forces(xx);
-            disp(result.T)
-            disp(result.M)
+            max_stresses = axle.calc_max_cross_section_effective_max_stress(xx, result.T, result.M);
 
             subplot(2, 2, 1);
             plot(xx, result.T(1,:), 'o-');
@@ -123,12 +122,27 @@ pbaspect([1,1,1]);
             hold on;
             title("Z direction (up)");
             legend(["Tz", "Mz"])
+
+            subplot(2, 2, 4);
+            plot(xx, max_stresses ./ 1e6, "o-");
+            % plot(xx, sqrt(result.T(1,:).^2 + result.T(2,:).^2 + result.T(3,:).^2), 'o-');
+            % hold on;
+            % plot(xx, sqrt(result.M(2,:).^2 + result.M(3,:).^2), 'o-');
+            % hold on;
+            % plot(xx, result.M(1,:), 'o-');
+            % hold on;
+            % title("Magnitudes");
+            % legend(["Tvärkraft belopp", "Böjmoment belopp", "Vridmoment belopp"])
+            ylabel("Effective stress [MPa]");
+            title("Effective stress");
+            legend(["Effective stress"]);
+
         end
         
 
-        velocity = 10;
-        acceleration = 1;
-        deacceleration = -1;
+        velocity = 95/3.6;
+        acceleration = 6;
+        deacceleration = -15;
 
         f1 = figure("Name", "Constant velocity");
         axle = axle.update_load_constant_velocity(velocity);
@@ -142,6 +156,52 @@ pbaspect([1,1,1]);
         axle = axle.update_load_acceleration(velocity, deacceleration);
         plot_cross_section_forces_and_moments(axle);
 
+
+
+        f4 = figure("Name", "Pure torsion");
+        radius = 1;
+        axle = Axle(1, 0.1, 0.1, radius, radius, 0, 0, 0, car);
+        force_matrix = [
+            0,0, 0, 0;
+            1, -1, 1, -1;
+            0, 0, 0, 0
+        ] * 1000;
+        act_point_matrix = [
+            0, 0, 1, 1;
+            0, 0, 0, 0;
+            -1, 1, 1, -1
+        ];
+        axle.force_matrix = force_matrix;
+        axle.act_point_matrix = act_point_matrix;
+        plot_cross_section_forces_and_moments(axle);
+        f4 = figure("Name", "Pure bending");
+        force_matrix = [
+            0, 0, 0;
+            0,0, 0,;
+            1, -2, 1,
+        ] * 1000;
+        act_point_matrix = [
+            0, 0.5, 1;
+            0, 0, 0;
+            -1,-1,-1,
+        ];
+        axle.force_matrix = force_matrix;
+        axle.act_point_matrix = act_point_matrix;
+        plot_cross_section_forces_and_moments(axle);
+        f4 = figure("Name", "Pure tension");
+        force_matrix = [
+            -1, 1;
+            0, 0,;
+            0, 0,
+        ] * 1000;
+        act_point_matrix = [
+            0, 1;
+            0, 0;
+            0, 0,
+        ];
+        axle.force_matrix = force_matrix;
+        axle.act_point_matrix = act_point_matrix;
+        plot_cross_section_forces_and_moments(axle);
 
         % result = calc_cross_section_forces(0, force_matrix, act_point_matrix);
         % disp(result.T)

@@ -16,9 +16,6 @@ classdef Axle
 
         force_matrix
         act_point_matrix
-
-        cross_section_radiuses
-        cross_section_change_area_positions
     end
     methods
         function obj=Axle(length_axle, distance_bearing, distance_center2brake, radius_main, radius_secondary, radius_brake, raduis_drive, radius_wheel, car)
@@ -128,15 +125,15 @@ classdef Axle
         end
         function ret=update_load_braking(obj, new_velocity, new_acceleration)
             %Constants
-            air_desity = 1;
+            air_desity = 1.2;
             g = 9.82;
 
             %Given forces
             air_resistance_magnitude = 0.5 * air_desity * obj.car.area_front * obj.car.coefficient_air_resistance * new_velocity.^2;
             drive_force_magnitude = air_resistance_magnitude + obj.car.mass * new_acceleration;
             wheel_force_vertical_magnitude = (drive_force_magnitude * obj.car.height_center_of_mass + air_resistance_magnitude * obj.car.height_air_resistance + obj.car.mass * g * obj.car.distance_front) / (obj.car.distance_rear + obj.car.distance_front);
-            chain_force_magnitude = drive_force_magnitude * (obj.radius_wheel * 2) / (2 * obj.raduis_drive);
-            chain_force_magnitude = drive_force_magnitude * (obj.radius_wheel * 2) / (2 * obj.radius_brake);
+            chain_force_magnitude = 0 * drive_force_magnitude * (obj.radius_wheel * 2) / (2 * obj.radius_brake);
+            braking_force_magnitude = drive_force_magnitude * obj.radius_wheel / (2 * obj.radius_brake);
 
             %Directions
             right = [1; 0; 0];
@@ -147,8 +144,8 @@ classdef Axle
             bearing_force_N = -0.5 * (drive_force_magnitude + chain_force_magnitude) * forward + wheel_force_vertical_magnitude * -0.5 * up ; % Actual values later
             wheel_drive_force_N = drive_force_magnitude * 0.5 * forward;
             wheel_normal_force_N = wheel_force_vertical_magnitude * 0.5 * up;
-            braking_force_N = drive_force_magnitude * (up + forward) / norm(up + forward);
-            chain_force_N = chain_force_magnitude * forward;
+            braking_force_N = 0.5 * braking_force_magnitude * (up + forward) / norm(up + forward);
+            chain_force_N = 0 * forward;
 
             %Act points
             wheel_act_point_left = 0 * right - obj.radius_wheel * up;
@@ -184,7 +181,7 @@ classdef Axle
                 [~, cols] = size(obj.act_point_matrix);
                 %Get forces left of x
                 for i = 1:cols
-                    if obj.act_point_matrix(1, i) - x <= 0
+                    if obj.act_point_matrix(1, i) <= x
                         forces = [forces, obj.force_matrix(:, i)];
                     end
                 end
@@ -202,52 +199,80 @@ classdef Axle
             ret.M = M;
         end
 
-        function ret = calc_cross_section_stress(obj, x_points, cross_section_forces, cross_section_moments)
-            stress_matrixes = zeros(3, 3, length(x_points));
+        function ret = calc_max_cross_section_effective_max_stress(obj, x_points, cross_section_forces, cross_section_moments)
+            cross_section_radiuses = [obj.radius_secondary, obj.radius_main, obj.radius_secondary];
+            cross_section_change_area_positions = [0, obj.distance_bearing, obj.length_axle - obj.distance_bearing];
             cross_section_moment_of_inertias = [
                 0, 0, 0;
                 cross_section_radiuses;
                 cross_section_radiuses
             ].^4 * pi ./ 4;
             cross_section_areas = pi * cross_section_radiuses.^2;
+                
+
+            max_effecive_stresses = zeros(1, length(x_points));
             
             for i = 1:length(x_points)
                 %Normal stress
-                z_coordinate = 0.1;
-                y_coordinate = 0.1;
+                
+                
+                %Get cross section of x
+                [~, cols] = size(cross_section_change_area_positions);
+                cross_section_index = 1;
+                for j = 1:cols
+                    if cross_section_change_area_positions(j) <= x_points(i)
+                        cross_section_index = j;
+
+                    end
+                end
+
                 
                 cs_force = cross_section_forces(:, i);
                 cs_moment = cross_section_moments(:, i);
-                cs_radius = cross_section_radiuses(1);
-                cs_area = cross_section_areas(1);
-                cs_inertia = cross_section_moment_of_inertias(:, 1);
+                cs_radius = cross_section_radiuses(cross_section_index);
+                cs_area = cross_section_areas(cross_section_index);
+                cs_inertia = cross_section_moment_of_inertias(:, cross_section_index);
+
+                % stress_xx = [];
+                % stress_xy = [];
+                % stress_xz = [];
+
+                % for angle_i = linspace(1, 360, 360)
+                %     angle = 2 * pi * angle_i / 360;
+                %     y_coordinate = cos(angle) * cs_radius;
+                %     z_coordinate = sin(angle) * cs_radius;
+
+
+
+                %     %           ---Normal stress x---            ---Bending stress y---                     ---Bending stress z---
+                %     stress_xx = [stress_xx, cs_force(1) / cs_area + z_coordinate * cs_moment(2) / cs_inertia(2) + y_coordinate * cs_moment(3) / cs_inertia(3)];
+                
+                %     %Shear stress
+                %     stress_xz = [stress_xz, 4*cs_force(3) / (3*pi * cs_radius.^4) * (cs_radius.^2 - z_coordinate.^2) + 4*cs_force(2) / (3*pi * cs_radius.^4) * z_coordinate*y_coordinate];
+                %     stress_xy = [stress_xy, 4*cs_force(2) / (3*pi * cs_radius.^4) * (cs_radius.^2 - y_coordinate.^2) - 4*cs_force(3) / (3*pi * cs_radius.^4) * y_coordinate*z_coordinate];
+                %     stress_xy = 0;  %Don't bother with shear stresses
+                %     stress_xz = 0;  %DOn't bother with shear stresses
+                % end
+                
+                % max_xx = max(stress_xx);
+                % max_xy = max(stress_xy);
+                % max_xz = max(stress_xz);
+
+                %Found in project description
+                max_xx = abs(cs_force(1) / cs_area) + abs(cs_radius * sqrt((cs_moment(3)*cs_inertia(2)).^2 + (cs_moment(2)*cs_inertia(3)).^2) / (cs_inertia(2)*cs_inertia(3)));
+                max_xy = 0;
+                max_xz = 0;
+
+                effective_stress_bend = sqrt(max_xx.^2 + 3*max_xy.^2 + 3*max_xz.^2);
+
+                %Torsion
+                shear_torsion = cs_radius* cs_moment(1) / (cs_radius.^4 * pi / 2);
+                effective_stress_torsion = sqrt(3) * abs(shear_torsion);
+
+                max_effecive_stresses(i) = effective_stress_bend + effective_stress_torsion;
+            end
         
-                stress_xx = cs_force(1) / cs_area + y_coordinate * cs_moment(2) / cs_inertia(2) + z_coordinate * cs_moment(3) / cs_inertia(3);
-        
-                %Shear stress
-                % stress_xz = 4/3 * cs_force / cs_area;
-                % stress_xy = 4/3 * cs_force / cs_area;
-                %Stress xz = force-z direction - force y-direction
-                stress_xz = 4*cs_force(3) / (3*pi * cs_radius.^4) * (cs_radius.^2 - z_coordinate.^2) + 4*cs_force(2) / (3*pi * cs_radius.^4) * z_coordinate*y_coordinate;
-                stress_xy = 4*cs_force(2) / (3*pi * cs_radius.^4) * (cs_radius.^2 - y_coordinate.^2) - 4*cs_force(3) / (3*pi * cs_radius.^4) * y_coordinate*z_coordinate;
-                % stress_xy = -4 * cs_force(q) / (3 * pi * cs_radius.^4) * y_coordinate * z_coordinate;
-        
-                % stress_twist = G * Mv / Kr * r
-                stress_twist_magnitude = sqrt(y_coordinate.^2 * z_coordinate.^2) * cs_moment(1) / (cs_radius.^4 * pi / 2);
-                stress_twist = [0; -z_coordinate; y_coordinate];
-                stress_twist = stress_twist_magnitude * stress_twist / norm(stress_twist);
-                disp("Stress twist:   ");
-                disp(stress_twist);
-        
-                stress_matrix = [
-                    stress_xx, stress_xy, stress_xz;
-                    stress_xy, 0, 0;
-                    stress_xz, 0, 0
-                ];
-                stress_matrixes(:,:,i) = stress_matrix;
-                end
-        
-            ret = stress_matrixes;
+            ret = max_effecive_stresses;
         end
         
 
