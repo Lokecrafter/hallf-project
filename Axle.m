@@ -72,9 +72,9 @@ classdef Axle
             %Act points
             wheel_act_point_left = 0 * right - obj.radius_wheel * up;
             bearing_act_point_left = (obj.distance_bearing) * right;
-            brake_act_point_left = (obj.length_axle * 0.5 - obj.distance_center2brake) * right + (obj.radius_brake/sqrt(2)) * forward - (obj.radius_brake/sqrt(2)) * up;
+            brake_act_point_left = (obj.length_axle * 0.5 - obj.distance_center2brake) * right - (obj.radius_brake/sqrt(2)) * forward + (obj.radius_brake/sqrt(2)) * up;
             chain_act_point = right * obj.length_axle/2 + obj.raduis_drive * up;
-            brake_act_point_right = (obj.length_axle * 0.5 + obj.distance_center2brake) * right + (obj.radius_brake/sqrt(2)) * forward - (obj.radius_brake/sqrt(2)) * up;
+            brake_act_point_right = (obj.length_axle * 0.5 + obj.distance_center2brake) * right - (obj.radius_brake/sqrt(2)) * forward + (obj.radius_brake/sqrt(2)) * up;
             bearing_act_point_right = (obj.length_axle - obj.distance_bearing) * right;
             wheel_act_point_right = obj.length_axle * right - obj.radius_wheel * up;
 
@@ -113,9 +113,9 @@ classdef Axle
             %Act points
             wheel_act_point_left = 0 * right - obj.radius_wheel * up;
             bearing_act_point_left = (obj.distance_bearing) * right;
-            brake_act_point_left = (obj.length_axle * 0.5 - obj.distance_center2brake) * right + (obj.radius_brake/sqrt(2)) * forward - (obj.radius_brake/sqrt(2)) * up;
+            brake_act_point_left = (obj.length_axle * 0.5 - obj.distance_center2brake) * right - (obj.radius_brake/sqrt(2)) * forward + (obj.radius_brake/sqrt(2)) * up;
             chain_act_point = right * obj.length_axle/2 + obj.raduis_drive * up;
-            brake_act_point_right = (obj.length_axle * 0.5 + obj.distance_center2brake) * right + (obj.radius_brake/sqrt(2)) * forward - (obj.radius_brake/sqrt(2)) * up;
+            brake_act_point_right = (obj.length_axle * 0.5 + obj.distance_center2brake) * right - (obj.radius_brake/sqrt(2)) * forward + (obj.radius_brake/sqrt(2)) * up;
             bearing_act_point_right = (obj.length_axle - obj.distance_bearing) * right;
             wheel_act_point_right = obj.length_axle * right - obj.radius_wheel * up;
 
@@ -154,9 +154,9 @@ classdef Axle
             %Act points
             wheel_act_point_left = 0 * right - obj.radius_wheel * up;
             bearing_act_point_left = (obj.distance_bearing) * right;
-            brake_act_point_left = (obj.length_axle * 0.5 - obj.distance_center2brake) * right + (obj.radius_brake/sqrt(2)) * forward - (obj.radius_brake/sqrt(2)) * up;
+            brake_act_point_left = (obj.length_axle * 0.5 - obj.distance_center2brake) * right - (obj.radius_brake/sqrt(2)) * forward + (obj.radius_brake/sqrt(2)) * up;
             chain_act_point = right * obj.length_axle/2 + obj.raduis_drive * up;
-            brake_act_point_right = (obj.length_axle * 0.5 + obj.distance_center2brake) * right + (obj.radius_brake/sqrt(2)) * forward - (obj.radius_brake/sqrt(2)) * up;
+            brake_act_point_right = (obj.length_axle * 0.5 + obj.distance_center2brake) * right - (obj.radius_brake/sqrt(2)) * forward + (obj.radius_brake/sqrt(2)) * up;
             bearing_act_point_right = (obj.length_axle - obj.distance_bearing) * right;
             wheel_act_point_right = obj.length_axle * right - obj.radius_wheel * up;
 
