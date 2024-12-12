@@ -80,27 +80,50 @@ function plot_cross_section_forces_and_moments(axle)
     %Draw direction arrow
     quiver3(axle.length_axle/2, 0, -axle.radius_wheel, 0, axle.radius_wheel * 2, 0, 'r', 'LineWidth', 5,'Color', "#bed466");
 
-    %Draw cylinders
+    function ret = plot_axle_section(radius, begin_x, length_x)
+        n=16;
+        [X,Y,Z] = cylinder(radius,n);
+        hold on;    ret = surf(Z*(length_x) + begin_x, X, Y);  
+    end
+    function apply_shading()
+        colormap gray;
+        shading interp;
+        lighting gouraud;
+        material metal;
+        lightangle(45,30);
+    end
+
+    %Draw axle
     %Main cylinder
-    [X,Y,Z] = cylinder(axle.radius_main);
-    hold on;    s1 = surf(Z*(axle.length_axle - 2 * axle.distance_bearing) + axle.distance_bearing, X, Y);
-
+    hold on;    plot_axle_section(axle.radius_main, axle.distance_bearing, axle.length_axle - 2*axle.distance_bearing);     apply_shading();
+    
     %Secondary cylinders
-    [X,Y,Z] = cylinder(axle.radius_secondary);
-    hold on;    s2 = surf(Z*axle.distance_bearing, X, Y);
-    hold on;    s3 = surf(Z*axle.distance_bearing + axle.length_axle - axle.distance_bearing, X, Y);
+    hold on;    plot_axle_section(axle.radius_secondary, 0, axle.distance_bearing);                                         apply_shading();
+    hold on;    plot_axle_section(axle.radius_secondary, axle.length_axle - axle.distance_bearing, axle.distance_bearing);  apply_shading();
+    
+    %Chain drive and brake disks
+    hold on;    drive = plot_axle_section(axle.raduis_drive, axle.length_axle/2 - 0.005, 0.01);                             apply_shading();
+    hold on;    disk1 = plot_axle_section(axle.radius_brake, axle.length_axle/2 - 0.005 - axle.distance_center2brake, 0.01);apply_shading();
+    hold on;    disk2 = plot_axle_section(axle.radius_brake, axle.length_axle/2 - 0.005 + axle.distance_center2brake, 0.01);apply_shading();
+    
+    drive.FaceAlpha = 0.5;
+    disk1.FaceAlpha = 0.5;
+    disk2.FaceAlpha = 0.5;
+    
+    %Wheels
+    thickness = 0.05;
+    hold on;    wheel1 = plot_axle_section(axle.radius_wheel, 0, thickness);                                                     apply_shading();
+    hold on;    wheel2 = plot_axle_section(axle.radius_wheel, axle.length_axle - thickness, thickness);                               apply_shading();
+    
+    wheel1.FaceAlpha = 0.5;
+    wheel2.FaceAlpha = 0.5;
+    wheel1.FaceColor = "black";
+    wheel2.FaceColor = "black";
 
-    s1.EdgeColor = "none";
-    s2.EdgeColor = "none";
-    s3.EdgeColor = "none";
-    s1.FaceColor = "interp";
-    s2.FaceColor = "interp";
-    s3.FaceColor = "interp";
-    s1.FaceLighting = "gouraud";
-    s2.FaceLighting = "gouraud";
-    s3.FaceLighting = "gouraud";
     axis equal
     camproj perspective
+    camzoom(1.8);
+
 
 
 
