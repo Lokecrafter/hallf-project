@@ -81,7 +81,7 @@ function plot_cross_section_forces_and_moments(axle)
     quiver3(axle.length_axle/2, 0, -axle.radius_wheel, 0, axle.radius_wheel * 2, 0, 'r', 'LineWidth', 5,'Color', "#bed466");
 
     function ret = plot_axle_section(radius, begin_x, length_x)
-        n=16;
+        n=64;
         [X,Y,Z] = cylinder(radius,n);
         hold on;    ret = surf(Z*(length_x) + begin_x, X, Y);  
     end
@@ -111,7 +111,7 @@ function plot_cross_section_forces_and_moments(axle)
     disk2.FaceAlpha = 0.5;
     
     %Wheels
-    thickness = 0.05;
+    thickness = axle.distance_bearing*0.8;
     hold on;    wheel1 = plot_axle_section(axle.radius_wheel, 0, thickness);                                                     apply_shading();
     hold on;    wheel2 = plot_axle_section(axle.radius_wheel, axle.length_axle - thickness, thickness);                               apply_shading();
     
